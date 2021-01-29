@@ -2,10 +2,13 @@
 import os
 import string
 import pickle
+import random
+import string 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from nltk.corpus import words
 from MLE import MLE
-from constants import START, UNK
+from constants import START, STOP, UNK
+from copy import deepcopy
 
 class MyModel:
 	@classmethod
@@ -45,30 +48,60 @@ class MyModel:
 
 		if self.mle:
 			for line in data:
+				# Split the line into characters.
 				line = [t for t in line]
-				print(f'LINE {line}')
+
 				# Pad the line. 
 				for _ in range(n - 1):
 					line.insert(0, START)
 
 				# Let hist be the last n-1 characters of ngram.
 				hist = tuple(line[-(n-1): ])
-				
-				# Let yhat be the most likely letter predicted by the model.
-				yhat = max(self.mle[hist], key=self.mle[hist].get) if hist in self.mle else None
+			
+				probabilities = deepcopy(self.mle[hist])
 
-				preds.append(yhat)
-		return preds
+				# Let m be the number of predictions per observation to return.
+				m = 3
+				obs = ''
+				for _ in range(m):
+
+					# The following chooses the top m most likely next characters.
+					# If such a character cannot be found in probabilities
+					# one is chosen at random.					
+
+					# Handle empty probabilities.
+					try:
+						argmax = self.argmax(probabilities)
+					except:
+						# By choosing a random letter.
+						argmax = random.choice(string.ascii_lowercase)
+					# Handle stop characters.
+					if argmax == STOP or argmax == START:
+						argmax = random.choice(string.ascii_lowercase)
+					# Remove argmax to prevent duplicate on multiple iterations of probabilities.
+					if argmax in probabilities:
+						probabilities.pop(argmax)
+
+					# Grow the string.
+					obs += str(argmax)
+				preds.append(obs)
+
+			return preds
+
+	def argmax(self, d):
+		''' Return the key in d with the maximum value. '''
+		return max(d, key=d.get)
 
 	def save(self, work_dir):
 		''' Save the trained model to a file. '''
+		# Pickle the entire model.
 		with open(os.path.join(work_dir, 'model.checkpoint'), 'wb') as f:
 			pickle.dump(self, f)
 
 	@classmethod
 	def load(cls, work_dir):
 		''' Return a trained model from the given directory. '''
-		# this particular model has nothing to load, but for demonstration purposes we will load a blank file
+		# Load the pickled model.
 		with open(os.path.join(work_dir, 'model.checkpoint'), 'rb') as f:
 			model = pickle.load(f)
 		return model
