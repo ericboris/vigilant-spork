@@ -14,6 +14,7 @@ TODO: Handle UNK tokens when outputting the top 3
 TODO: save the trained model so it can just be referenced
 TODO: note that currently i am omitting the new line from the dictionary, when evaluating new lines are stripped away
  but i dont know how the training data is loaded in and dealt with much i have only been working with evaluate
+TODO: It looks like we are only using a small chunk (200 lines) for training but i think we want to use the entire file...
 
 """
 
@@ -95,7 +96,7 @@ def char_tensor(string):
 
 #print(char_tensor('abcDEF'))
 
-def random_training_set():    
+def random_training_set():
     chunk = random_chunk()
     inp = char_tensor(chunk[:-1])
     target = char_tensor(chunk[1:])
