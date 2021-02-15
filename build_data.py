@@ -40,28 +40,29 @@ with open('data/xcopa-master/data-gmt/et/val.et.jsonl') as doc:
         lines.append(dict['choice1'])
         lines.append(dict['choice2'])
 
-train_upper = int(len(lines) * 0.6)
-dev_upper = train_upper + int((len(lines) * 0.2))
+train_upper = int(len(lines) * 0.8)
 
 random.shuffle(lines)
 
 train = lines[:train_upper]
-dev = lines[train_upper:dev_upper]
-test = lines[dev_upper:]
+dev = lines[train_upper:]
 
 train_file = open('data/cleaned_data/train.txt', 'w')
 for i in train:
     train_file.write(i + '\n')
 train_file.close()
 
-dev_file = open('data/cleaned_data/dev.txt', 'w')
+dev_input = open('data/cleaned_data/dev_input.txt', 'w')
+dev_answer = open('data/cleaned_data/dev_answer.txt', 'w')
 for i in dev:
-    dev_file.write(i + '\n')
-dev_file.close()
+    val = random.randrange(1, len(i) - 1)
+    dev_input.write(i[:val]+ '\n')
+    dev_answer.write(i[val] + '\n')
+    print(str(i))
+    print(str(i[:val]))
+    print(str(i[val]))
+dev_input.close()
+dev_answer.close()
 
-test_file = open('data/cleaned_data/test.txt', 'w')
-for i in test:
-    test_file.write(i + '\n')
-test_file.close()
 
 
