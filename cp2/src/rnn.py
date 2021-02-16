@@ -31,25 +31,61 @@ def random_chunk(data, chunk_len):
     return data[start_index:end_index]
 
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, n_layers=1):
-        super(RNN, self).__init__()
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.n_layers = n_layers
-        
-        self.encoder = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, n_layers)
-        self.decoder = nn.Linear(hidden_size, output_size)
-    
-    def forward(self, input, hidden):
-        input = self.encoder(input.view(1, -1))
-        output, hidden = self.gru(input.view(1, 1, -1), hidden)
-        output = self.decoder(output.view(1, -1))
-        return output, hidden
+	def __init__(self, input_size, hidden_size, output_size, n_layers=1):
+		super(RNN, self).__init__()
+		self.input_size = input_size
+		self.hidden_size = hidden_size
+		self.output_size = output_size
+		self.n_layers = n_layers
 
-    def init_hidden(self):
-        return Variable(torch.zeros(self.n_layers, 1, self.hidden_size))
+		self.encoder = nn.Embedding(input_size, hidden_size)
+		self.gru = nn.GRU(hidden_size, hidden_size, n_layers)
+		self.decoder = nn.Linear(hidden_size, output_size)
+
+	def forward(self, input, hidden):
+		input = self.encoder(input.view(1, -1))
+		output, hidden = self.gru(input.view(1, 1, -1), hidden)
+		output = self.decoder(output.view(1, -1))
+		return output, hidden
+
+	def init_hidden(self):
+		return Variable(torch.zeros(self.n_layers, 1, self.hidden_size))
+
+	def train(self, data):
+		self.data = data	
+		start = time.time()
+		all_losses = []
+		loss_avg = 0
+
+		def inner(inp, target):
+			hidden = self.init_hidden()
+			self.zero_grad()
+			loss = 0
+
+			for c in range(chunk_len):
+				output, hidden = self(inp[c], hidden)
+				target = torch.reshape(target, (len(target), 1))
+				loss += criterion(output, target[c])
+
+			loss.backward()
+			decoder_optimizer.step()
+			return loss.data.item() / chunk_len
+
+		for epoch in range(1, n_epochs + 1):
+			chunk = random_chunk(data, chunk_len)
+
+			inp, target = random_training_set(chunk)
+			loss = inner(inp, target)     
+			loss_avg += loss
+
+			if epoch % print_every == 0:
+				print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
+				print(f'INPUT:\n{chunk}\nPREDICTION:\n{evaluate("Wh")}\n')
+
+			if epoch % plot_every == 0:
+				all_losses.append(loss_avg / plot_every)
+				loss_avg = 0
+		
 
 # Turn string into list of longs
 def char_tensor(string):
@@ -100,19 +136,6 @@ def time_since(since):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
-def train(inp, target):
-	hidden = decoder.init_hidden()
-	decoder.zero_grad()
-	loss = 0
-
-	for c in range(chunk_len):
-		output, hidden = decoder(inp[c], hidden)
-		target = torch.reshape(target, (len(target), 1))
-		loss += criterion(output, target[c])
-
-	loss.backward()
-	decoder_optimizer.step()
-	return loss.data.item() / chunk_len
 
 def write(file_name, obj):
 	''' Write the object to a file with the given file name. '''
@@ -123,6 +146,20 @@ def read(file_name):
 	''' Return the read object. '''
 	with open(file_name, 'rb') as f:
 		return pickle.load(f)
+
+def write_pred(preds, fname):
+	with open(fname, 'wt') as f:
+		for p in preds:
+			f.write('{}\n'.format(p))
+
+def load_test_data(fname):
+	# your code here
+	data = []
+	with open(fname) as f:
+		for line in f:
+			inp = line[:-1]  # the last character is a newline
+			data.append(inp)
+	return data
 
 if __name__ == '__main__':
 	parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -143,14 +180,14 @@ if __name__ == '__main__':
 		else:
 			print('Instantiating model')
 
-			n_epochs = 20
+			n_epochs = 2000
 			decoder = None
 			print_every = 20
 			plot_every = 10
 			hidden_size = 10
 			n_layers = 1
 			lr = 0.005
-			chunk_len = 100
+			chunk_len = 200
 
 			print('Loading training data')
 			
@@ -167,27 +204,31 @@ if __name__ == '__main__':
 
 			decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=lr)
 			criterion = nn.CrossEntropyLoss()
-
-			start = time.time()
-			all_losses = []
-			loss_avg = 0
-
-			for epoch in range(1, n_epochs + 1):
-				chunk = random_chunk(data, chunk_len)
-
-				inp, target = random_training_set(chunk)
-				loss = train(inp, target)     
-				loss_avg += loss
-
-				if epoch % print_every == 0:
-					print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
-					print(f'INPUT:\n{chunk}\nPREDICTION:\n{evaluate("Wh")}\n')
-
-				if epoch % plot_every == 0:
-					all_losses.append(loss_avg / plot_every)
-					loss_avg = 0
+			decoder.train(data)
 
 			print('Saving model')
 			write(file_name='work/trained_model', obj=decoder)
+	elif args.mode == 'test':
+		print('Loading model')
+		decoder = read('src/work/trained_model')	
+		
+		print(f'Loading test data from {args.test_data}')
+		test_data = load_test_data(args.test_data)
+		all_characters = get_vocabulary(decoder.data)
+		UNK_INDEX = len(all_characters)
+
+		print('Making predictions')
+		#results = evaluate()
+		results = []
+		for line in test_data:
+			results.append(evaluate(line))
+		
+		#for i, line in enumerate(test_data):
+		#	print(f'{line}\t{results[i]}')
+
+		print(f'Writing predictions to {args.test_output}')
+		assert len(results) == len(test_data), f'Expected {len(test_data)} but got {len(results)}'
+		#print(f'ARGS OUT={args.test_output}')
+		write_pred(results, args.test_output)
 	else:
 		raise NotImplementedError('Unknown mode {}'.format(args.mode))

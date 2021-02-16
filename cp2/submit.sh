@@ -12,7 +12,7 @@ printf "Eric Boris,eboris91\nAllyson Ely,elyall17" > submit/team.txt
 python src/rnn.py train --work_dir work
 
 # make predictions on example data submit it in pred.txt
-python src/myprogram.py test --work_dir work --test_data example/input.txt --test_output submit/pred.txt
+python src/rnn.py test --work_dir work --test_data example/input.txt --test_output submit/pred.txt
 
 # submit docker file
 cp Dockerfile submit/Dockerfile
