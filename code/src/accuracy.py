@@ -9,8 +9,8 @@ accurate = 0
 for i in range(len(pred_line)):
     total += 1
     predicted = pred_line[i]
-    predicted = [char for char in predicted]
-    answer = ans_line[i]
+    predicted = [char for char in predicted.rstrip()]
+    answer = (ans_line[i]).rstrip()
     if answer in predicted:
         accurate += 1
 print('total: ' + str(total))

@@ -5,34 +5,22 @@ Original file is located at
     https://colab.research.google.com/drive/1N6U11iuRq4-ihD5jDRT71iuYQzSxIFKs
 Built following this tutorial:
 https://github.com/spro/practical-pytorch/blob/master/char-rnn-generation/char-rnn-generation.ipynb
-TODO: Handle all unicode chars, currently convereted to ascii
-TODO: Handle UNK tokens when outputting the top 3
-TODO: save the trained model so it can just be referenced
-TODO: note that currently i am omitting the new line from the dictionary, when evaluating new lines are stripped away
- but i dont know how the training data is loaded in and dealt with much i have only been working with evaluate
-TODO: It looks like we are only using a small chunk (200 lines) for training but i think we want to use the entire file...
+TODO: Set up docker file
+TODO: Run docker file, make sure it builds
+TODO: Get the proper workflow to pass in an input file
+TODO: Clean up Repo
+TODO: Clean up misc in this file
 """
 
-# Import from drive contents.
-#from google.colab import drive
-#drive.mount('/content/drive')
-
-# unidecode not installed by default.
-# !pip install unidecode
-
 import os
-import unidecode
-import string
 import torch
 import random
 import torch.nn as nn
 from torch.autograd import Variable
 import pickle
+import time, math
 
-# NOTE: UNK is not actually a character, it will just be known as the last index in the characters by
-# adding 1 to the overall n_charcters
-
-#TODO: Eric this should theoretically be all known characters by the traiing data correct?
+# Build dictionary of known characters by the model
 all_characters = ''
 with open('../../data/cleaned_data/train.txt') as train:
     for line in train.readlines():
@@ -41,11 +29,11 @@ with open('../../data/cleaned_data/train.txt') as train:
                 all_characters += i
 # print(f'ALL CHAR={sorted(all_characters)}\n\nDONE')
 
-# add one for UNK
+# add one for UNK where UNK is the last index in a tensor representation
 n_characters = len(all_characters) + 1
 UNK_INDEX = len(all_characters)
 
-print(str(all_characters))
+#print(str(all_characters))
 
 #file = unidecode.unidecode(open('../../data/cleaned_data/train.txt').read())
 # Swap to this for random chunk
@@ -64,18 +52,11 @@ print(f'Top 10 Lines (First 323 characters):\n{file[:323]}\n')
 print(f'file len (in characters) = {file_len}')
 
 chunk_len = 40
-#chunk_len = 200
-
-def random_line():
-	i = random.randint(0, len(file))
-	return file[i]
 
 def random_chunk(chunk_len):
     start_index = random.randint(0, file_len - chunk_len)
     end_index = start_index + chunk_len + 1
     return file[start_index:end_index]
-
-#print(random_chunk())
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, n_layers=1):
@@ -108,14 +89,12 @@ def char_tensor(string):
             tensor[c] = UNK_INDEX
     return Variable(tensor)
 
-#print(char_tensor('abcDEF'))
-
 def random_training_set(chunk):
     inp = char_tensor(chunk[:-1])
     target = char_tensor(chunk[1:])
     return inp, target
 
-# TODO: Eric I modified this to take in a string and then predict top 3 and return a string of the top 3 characters
+# Returns the top 3 next characters for a given string
 def evaluate(prime_str='A', temperature=0.8):
     hidden = decoder.init_hidden()
     prime_input = char_tensor(prime_str)
@@ -129,24 +108,19 @@ def evaluate(prime_str='A', temperature=0.8):
 
     # Sample from the network as a multinomial distribution
     output_dist = output.data.view(-1).div(temperature).exp()
-    top_3 = torch.multinomial(output_dist, 4)
-    #TODO: modify to get top 4 and select ther other if there is an UNK as a top 3, for now it is a star
+    top_4 = torch.multinomial(output_dist, 4)
 
-    # Add predicted character to string and use as next input
-    # * = UNK for now...
-    predicted_char_1 = '*'
-    predicted_char_2 = '*'
-    predicted_char_3 = '*'
-    if top_3[0] != UNK_INDEX:
-        predicted_char_1 = all_characters[top_3[0]]
-    if top_3[1] != UNK_INDEX:
-        predicted_char_2 = all_characters[top_3[1]]
-    if top_3[2] != UNK_INDEX:
-        predicted_char_3 = all_characters[top_3[2]]
+    # this should go through and skip the UNK character if it is a top 3 character
+    top_3 = []
+    for i in range(4):
+        if top_4[i] != UNK_INDEX:
+            top_3.append(all_characters[top_4[i]])
+
+    predicted_char_1 = top_3[0]
+    predicted_char_2 = top_3[1]
+    predicted_char_3 = top_3[2]
     predicted = predicted_char_1 + predicted_char_2 + predicted_char_3
     return predicted
-
-import time, math
 
 def time_since(since):
     s = time.time() - since
@@ -250,13 +224,4 @@ import matplotlib.ticker as ticker
 #plt.figure()
 #plt.plot(all_losses)
 
-answers = open('../../data/dev_predict', 'w')
-with open('../../data/cleaned_data/dev_input.txt') as input:
-	for line in input.readlines():
-		#print(str(line))
-		top_3 = evaluate(line.rstrip())
-		#print(top_3 + '\n')
-		print(f'{line} :: {top_3}')
-		answers.write(top_3 + '\n')
-		input.close()
-answers.close()
+

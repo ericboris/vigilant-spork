@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import string
 import pickle
 import random
 import string 
@@ -23,74 +22,64 @@ class MyModel:
 		data = []
 		with open(fname) as f:
 			for line in f:
-				inp = line[:-1]  # the last character is a newline
-				data.append(inp)
+				data.append(line.rstrip())
 		return data
-
-	@classmethod
-	def write_pred(cls, preds, fname):
-		with open(fname, 'wt') as f:
-			for p in preds:
-				f.write('{}\n'.format(p))
 
 	def run_train(self, data, work_dir):
 		''' Train a LI trigram model. '''
 		n = 3
 		mle = MLE(data)
 		self.mle = mle.ngram(n)
+
 	
 	def run_pred(self, data):
 		''' Use the given model to make predictions of the next letter in each line 
 			of the given data. '''	
-		n = 3
+
 		# Let preds be the list of predicted next letters to return.
 		preds = []
+		#TODO: get the proper file path
+		#Figure out how to configure the file to have
+		with open('../../data/cleaned_data/dev_input.txt') as input:
+			for line in input.readlines():
+				top_3 = evaluate(line.rstrip())
+				# print(f'{line} :: {top_3}')
+				preds.append(top_3)
+		input.close()
+		return preds
 
-		if self.mle:
-			for line in data:
-				# Split the line into characters.
-				line = [t for t in line]
+	def evaluate(prime_str='A', temperature=0.8):
+		hidden = decoder.init_hidden()
+		prime_input = char_tensor(prime_str)
 
-				# Pad the line. 
-				for _ in range(n - 1):
-					line.insert(0, START)
+		# Use priming string to "build up" hidden state
+		for p in range(len(prime_str) - 1):
+			_, hidden = decoder(prime_input[p], hidden)
+		inp = prime_input[-1]
 
-				# Let hist be the last n-1 characters of ngram.
-				hist = tuple(line[-(n-1): ])
-			
-				probabilities = deepcopy(self.mle[hist])
+		output, hidden = decoder(inp, hidden)
 
-				# Let m be the number of predictions per observation to return.
-				m = 3
-				obs = ''
-				for _ in range(m):
+		# Sample from the network as a multinomial distribution
+		output_dist = output.data.view(-1).div(temperature).exp()
+		top_4 = torch.multinomial(output_dist, 4)
 
-					# The following chooses the top m most likely next characters.
-					# If such a character cannot be found in probabilities
-					# one is chosen at random.					
+		# this should go through and skip the UNK character if it is a top 3 character
+		top_3 = []
+		for i in range(4):
+			if top_4[i] != UNK_INDEX:
+				top_3.append(all_characters[top_4[i]])
 
-					# Handle empty probabilities.
-					try:
-						argmax = self.argmax(probabilities)
-					except:
-						# By choosing a random letter.
-						argmax = random.choice(string.ascii_lowercase)
-					# Handle stop characters.
-					if argmax == STOP or argmax == START:
-						argmax = random.choice(string.ascii_lowercase)
-					# Remove argmax to prevent duplicate on multiple iterations of probabilities.
-					if argmax in probabilities:
-						probabilities.pop(argmax)
+		predicted_char_1 = top_3[0]
+		predicted_char_2 = top_3[1]
+		predicted_char_3 = top_3[2]
+		predicted = predicted_char_1 + predicted_char_2 + predicted_char_3
+		return predicted
 
-					# Grow the string.
-					obs += str(argmax)
-				preds.append(obs)
-
-			return preds
-
-	def argmax(self, d):
-		''' Return the key in d with the maximum value. '''
-		return max(d, key=d.get)
+	@classmethod
+	def write_pred(cls, preds, fname):
+		with open(fname, 'wt') as f:
+			for p in preds:
+				f.write('{}\n'.format(p))
 
 	def save(self, work_dir):
 		''' Save the trained model to a file. '''
