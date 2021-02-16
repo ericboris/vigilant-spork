@@ -2,11 +2,6 @@
 """Project 2 RNN.ipynb
 Built following this tutorial:
 https://github.com/spro/practical-pytorch/blob/master/char-rnn-generation/char-rnn-generation.ipynb
-TODO: Set up docker file
-TODO: Run docker file, make sure it builds
-TODO: Get the proper workflow to pass in an input file
-TODO: Clean up Repo
-TODO: Clean up misc in this file
 """
 
 import os
@@ -80,7 +75,7 @@ class RNN(nn.Module):
 
 			if epoch % print_every == 0:
 				print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
-				print(f'INPUT:\n{chunk}\nPREDICTION:\n{evaluate("Wh")}\n')
+				print('INPUT:\n{}'.format(chunk)+'\nPREDICTION:\n{}'.format(evaluate("Wh"))+'\n')
 
 			if epoch % plot_every == 0:
 				all_losses.append(loss_avg / plot_every)
@@ -171,12 +166,12 @@ if __name__ == '__main__':
 
 	if args.mode == 'train':	
 		if not os.path.isdir(args.work_dir):
-			print(f'Making working directory {args.work_dir}')
+			print('Making working directory'.format(args.work_dir))
 			os.makedirs(args.work_dir)
 		
-		if os.path.isfile(path='work/trained_model'):
+		if os.path.isfile(path='../work/trained_model'):
 			print('Trained model already exists')
-			decoder = read('work/trained_model')
+			decoder = read('../work/trained_model')
 		else:
 			print('Instantiating model')
 
@@ -207,27 +202,23 @@ if __name__ == '__main__':
 			decoder.train(data)
 
 			print('Saving model')
-			write(file_name='work/trained_model', obj=decoder)
+			write(file_name='../work/trained_model', obj=decoder)
 	elif args.mode == 'test':
 		print('Loading model')
-		decoder = read('src/work/trained_model')	
+		decoder = read('../work/trained_model')
 		
-		print(f'Loading test data from {args.test_data}')
+		print('Loading test data from {}'.format(args.test_data))
 		test_data = load_test_data(args.test_data)
 		all_characters = get_vocabulary(decoder.data)
 		UNK_INDEX = len(all_characters)
 
 		print('Making predictions')
-		#results = evaluate()
 		results = []
 		for line in test_data:
 			results.append(evaluate(line))
-		
-		#for i, line in enumerate(test_data):
-		#	print(f'{line}\t{results[i]}')
 
-		print(f'Writing predictions to {args.test_output}')
-		assert len(results) == len(test_data), f'Expected {len(test_data)} but got {len(results)}'
+		print('Writing predictions to {}'.format(args.test_output))
+		assert len(results) == len(test_data), 'Expected {}'.format(len(test_data)) + 'but got {}'.format(len(results))
 		#print(f'ARGS OUT={args.test_output}')
 		write_pred(results, args.test_output)
 	else:
