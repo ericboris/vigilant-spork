@@ -23,8 +23,8 @@ TODO: It looks like we are only using a small chunk (200 lines) for training but
 import os
 import unidecode
 import string
-import random
 import torch
+import random
 import torch.nn as nn
 from torch.autograd import Variable
 import pickle
@@ -37,8 +37,9 @@ all_characters = ''
 with open('../../data/cleaned_data/train.txt') as train:
     for line in train.readlines():
         for i in line:
-            if i not in all_characters and i != '\n':
+            if i not in all_characters and i != '\n' and i.isalpha():
                 all_characters += i
+# print(f'ALL CHAR={sorted(all_characters)}\n\nDONE')
 
 # add one for UNK
 n_characters = len(all_characters) + 1
@@ -46,14 +47,30 @@ UNK_INDEX = len(all_characters)
 
 print(str(all_characters))
 
-file = unidecode.unidecode(open('../../data/cleaned_data/train.txt').read())
+#file = unidecode.unidecode(open('../../data/cleaned_data/train.txt').read())
+# Swap to this for random chunk
+file = open('../../data/cleaned_data/train.txt').read()
+"""
+file = []
+with open('../../data/cleaned_data/train.txt') as f:
+	for line in f:
+		file.append(line)
+
+for line in file:
+	print(f'line={line}')
+"""
 file_len = len(file)
 print(f'Top 10 Lines (First 323 characters):\n{file[:323]}\n')
 print(f'file len (in characters) = {file_len}')
 
-chunk_len = 200
+chunk_len = 40
+#chunk_len = 200
 
-def random_chunk():
+def random_line():
+	i = random.randint(0, len(file))
+	return file[i]
+
+def random_chunk(chunk_len):
     start_index = random.randint(0, file_len - chunk_len)
     end_index = start_index + chunk_len + 1
     return file[start_index:end_index]
@@ -93,8 +110,7 @@ def char_tensor(string):
 
 #print(char_tensor('abcDEF'))
 
-def random_training_set():
-    chunk = random_chunk()
+def random_training_set(chunk):
     inp = char_tensor(chunk[:-1])
     target = char_tensor(chunk[1:])
     return inp, target
@@ -180,12 +196,12 @@ def read(file_name):
 		return pickle.load(f)
 
 
-n_epochs = 2000
-print_every = 100
+n_epochs = 20000
+print_every = 200
 plot_every = 10
-hidden_size = 100
-n_layers = 1
-lr = 0.005
+hidden_size = 200
+n_layers = 4
+lr = 0.01
 
 decoder = None
 if os.path.isfile(path='trained_model'):
@@ -204,7 +220,13 @@ else:
 
 	for epoch in range(1, n_epochs + 1):
 		#print(f'Epoch: {epoch}')
-		inp, target = random_training_set()
+
+		# TODO WORKING HERE - Change from random chunk to random line.
+		chunk = random_chunk(chunk_len)
+		# chunk = random_line()
+		# print(f'chunk:{chunk}\nchunk_len:{len(chunk)}')
+
+		inp, target = random_training_set(chunk)
 		# print(f'inp shape={inp.shape}, inp[0]={inp[0]}')
 		# print(f'tar shape={target.shape}, tar[0]={target[0]}')
 		loss = train(inp, target)     
@@ -212,7 +234,7 @@ else:
 
 		if epoch % print_every == 0:
 			print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
-			print(evaluate('Wh'), '\n')
+			print(f'INPUT:\n{chunk}\nPREDICTION:\n{evaluate("Wh")}\n')
 
 		if epoch % plot_every == 0:
 			all_losses.append(loss_avg / plot_every)
@@ -230,10 +252,11 @@ import matplotlib.ticker as ticker
 
 answers = open('../../data/dev_predict', 'w')
 with open('../../data/cleaned_data/dev_input.txt') as input:
-    for line in input.readlines():
-        print(str(line))
-        top_3 = evaluate(line.rstrip())
-        print(top_3 + '\n')
-        answers.write(top_3 + '\n')
-input.close()
+	for line in input.readlines():
+		#print(str(line))
+		top_3 = evaluate(line.rstrip())
+		#print(top_3 + '\n')
+		print(f'{line} :: {top_3}')
+		answers.write(top_3 + '\n')
+		input.close()
 answers.close()
