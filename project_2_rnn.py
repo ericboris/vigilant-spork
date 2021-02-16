@@ -20,14 +20,12 @@ TODO: It looks like we are only using a small chunk (200 lines) for training but
 # unidecode not installed by default.
 # !pip install unidecode
 
-import os
 import unidecode
 import string
 import random
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-import pickle
 
 # NOTE: UNK is not actually a character, it will just be known as the last index in the characters by
 # adding 1 to the overall n_charcters
@@ -169,17 +167,6 @@ def train(inp, target):
     # Removed the following because error. 
     # return loss.data[0] / chunk_len
 
-def write(file_name, obj):
-	''' Write the object to a file with the given file name. '''
-	with open(file_name, 'wb') as f:
-		pickle.dump(obj, f)
-
-def read(file_name):
-	''' Return the read object. '''
-	with open(file_name, 'rb') as f:
-		return pickle.load(f)
-
-
 n_epochs = 2000
 print_every = 100
 plot_every = 10
@@ -187,38 +174,29 @@ hidden_size = 100
 n_layers = 1
 lr = 0.005
 
-decoder = None
-if os.path.isfile(path='trained_model'):
-	print('READ')
-	decoder = read('trained_model')
-else:
-	print('WRITE')
-	decoder = RNN(n_characters, hidden_size, n_characters, n_layers)
+decoder = RNN(n_characters, hidden_size, n_characters, n_layers)
+decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=lr)
+criterion = nn.CrossEntropyLoss()
 
-	decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=lr)
-	criterion = nn.CrossEntropyLoss()
+start = time.time()
+all_losses = []
+loss_avg = 0
 
-	start = time.time()
-	all_losses = []
-	loss_avg = 0
+for epoch in range(1, n_epochs + 1):
+    #print(f'Epoch: {epoch}')
+    inp, target = random_training_set()
+    # print(f'inp shape={inp.shape}, inp[0]={inp[0]}')
+    # print(f'tar shape={target.shape}, tar[0]={target[0]}')
+    loss = train(inp, target)     
+    loss_avg += loss
 
-	for epoch in range(1, n_epochs + 1):
-		#print(f'Epoch: {epoch}')
-		inp, target = random_training_set()
-		# print(f'inp shape={inp.shape}, inp[0]={inp[0]}')
-		# print(f'tar shape={target.shape}, tar[0]={target[0]}')
-		loss = train(inp, target)     
-		loss_avg += loss
+    if epoch % print_every == 0:
+        print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
+        print(evaluate('Wh'), '\n')
 
-		if epoch % print_every == 0:
-			print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
-			print(evaluate('Wh'), '\n')
-
-		if epoch % plot_every == 0:
-			all_losses.append(loss_avg / plot_every)
-			loss_avg = 0
-
-	write(file_name='trained_model', obj=decoder)
+    if epoch % plot_every == 0:
+        all_losses.append(loss_avg / plot_every)
+        loss_avg = 0
 
 # Commented out IPython magic to ensure Python compatibility.
 #import matplotlib.pyplot as plt

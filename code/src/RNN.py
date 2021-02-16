@@ -226,7 +226,6 @@ class SequenceClassifier(nn.Module):
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-
 def train(model, dataloader, optimizer, device):
     for texts, labels in tqdm(dataloader):
         texts, labels = texts.to(device), labels.to(device)
