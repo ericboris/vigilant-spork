@@ -1,7 +1,7 @@
 #pred = open('../../data/dev_predict', 'r')
 #ans = open('../../data/cleaned_data/dev_answer.txt', 'r')
-pred = open('submit/output/pred.txt', 'r')
-ans = open('submit/example/answer_lg.txt', 'r')
+pred = open('submit_original/output/pred.txt', 'r')
+ans = open('submit_original/example/answer_lg.txt', 'r')
 
 
 pred_line = pred.readlines()

@@ -9,10 +9,10 @@ mkdir -p submit
 printf "Eric Boris,eboris91\nAllyson Ely,elyall17" > submit/team.txt
 
 # train model and save the trained model to work directory work
-python src/rnn.py train --work_dir work
+python3 src/rnn.py train --work_dir work
 
 # make predictions on example data submit it in pred.txt
-python src/rnn.py test --work_dir work --test_data example/input.txt --test_output submit/pred.txt
+python3 src/rnn.py test --work_dir work --test_data example/input.txt --test_output submit/pred.txt
 
 # submit docker file
 cp Dockerfile submit/Dockerfile
