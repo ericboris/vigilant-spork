@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
 			print('Loading training data')
 			
-			data = open('src/data/cleaned_data/train.txt').read()
+			data = open('data/cleaned_data/train.txt').read()
 			file_len = len(data)
 	
 			all_characters = get_vocabulary(data)
