@@ -2,14 +2,10 @@
 """Project 2 RNN.ipynb
 Built following this tutorial:
 https://github.com/spro/practical-pytorch/blob/master/char-rnn-generation/char-rnn-generation.ipynb
-TODO: Set up docker file
-TODO: Run docker file, make sure it builds
-TODO: Get the proper workflow to pass in an input file
-TODO: Clean up Repo
-TODO: Clean up misc in this file
 """
 
 import os
+from os.path import join
 import torch
 import random
 import torch.nn as nn
@@ -80,7 +76,7 @@ class RNN(nn.Module):
 
 			if epoch % print_every == 0:
 				print('[%s (%d %d%%) %.4f]' % (time_since(start), epoch, epoch / n_epochs * 100, loss))
-				print(f'INPUT:\n{chunk}\nPREDICTION:\n{evaluate("Wh")}\n')
+				print('INPUT:\n{}'.format(chunk)+'\nPREDICTION:\n{}'.format(evaluate("Wh"))+'\n')
 
 			if epoch % plot_every == 0:
 				all_losses.append(loss_avg / plot_every)
@@ -174,24 +170,24 @@ if __name__ == '__main__':
 			print(f'Making working directory {args.work_dir}')
 			os.makedirs(args.work_dir)
 		
-		if os.path.isfile(path='work/trained_model'):
+		if os.path.isfile(path=join(args.work_dir, 'model.checkpoint')):
 			print('Trained model already exists')
-			decoder = read('work/trained_model')
+			# decoder = read('../work/trained_model')
 		else:
 			print('Instantiating model')
 
 			n_epochs = 2000
 			decoder = None
-			print_every = 40
+			print_every = 20
 			plot_every = 10
-			hidden_size = 500
-			n_layers = 3
-			lr = 0.01
-			chunk_len = 30
+			hidden_size = 100
+			n_layers = 2
+			lr = 0.005
+			chunk_len = 100
 
 			print('Loading training data')
 			
-			data = open('../data/cleaned_data/train.txt').read()
+			data = open('src/data/cleaned_data/train.txt').read()
 			file_len = len(data)
 	
 			all_characters = get_vocabulary(data)
@@ -207,10 +203,10 @@ if __name__ == '__main__':
 			decoder.train(data)
 
 			print('Saving model')
-			write(file_name='work/trained_model', obj=decoder)
+			write(file_name=join(args.work_dir, 'model.checkpoint'), obj=decoder)
 	elif args.mode == 'test':
 		print('Loading model')
-		decoder = read('src/work/trained_model')	
+		decoder = read(join(args.work_dir, 'model.checkpoint'))
 		
 		print(f'Loading test data from {args.test_data}')
 		test_data = load_test_data(args.test_data)
@@ -218,17 +214,13 @@ if __name__ == '__main__':
 		UNK_INDEX = len(all_characters)
 
 		print('Making predictions')
-		#results = evaluate()
 		results = []
 		for line in test_data:
 			results.append(evaluate(line))
-		
-		#for i, line in enumerate(test_data):
-		#	print(f'{line}\t{results[i]}')
 
 		print(f'Writing predictions to {args.test_output}')
 		assert len(results) == len(test_data), f'Expected {len(test_data)} but got {len(results)}'
 		#print(f'ARGS OUT={args.test_output}')
 		write_pred(results, args.test_output)
 	else:
-		raise NotImplementedError('Unknown mode {}'.format(args.mode))
+		raise NotImplementedError(f'Unknown mode {args.mode}')
