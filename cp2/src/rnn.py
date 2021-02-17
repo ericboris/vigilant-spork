@@ -182,12 +182,12 @@ if __name__ == '__main__':
 
 			n_epochs = 2000
 			decoder = None
-			print_every = 20
+			print_every = 40
 			plot_every = 10
-			hidden_size = 10
-			n_layers = 1
-			lr = 0.005
-			chunk_len = 200
+			hidden_size = 500
+			n_layers = 3
+			lr = 0.01
+			chunk_len = 30
 
 			print('Loading training data')
 			
