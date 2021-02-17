@@ -1,6 +1,6 @@
 #pred = open('../../data/dev_predict', 'r')
 #ans = open('../../data/cleaned_data/dev_answer.txt', 'r')
-pred = open('../submit/pred.txt', 'r')
+pred = open('../submit_original/pred.txt', 'r')
 ans = open('../example/answer.txt', 'r')
 
 

@@ -35,5 +35,4 @@ RUN /opt/conda/bin/conda install --yes \
     scikit-image
 
 RUN pip install torch
-
 RUN pip install pickle-mixin

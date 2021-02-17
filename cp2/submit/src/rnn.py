@@ -176,12 +176,12 @@ if __name__ == '__main__':
 		else:
 			print('Instantiating model')
 
-			n_epochs = 100
+			n_epochs = 2000
 			decoder = None
 			print_every = 20
 			plot_every = 10
-			hidden_size = 10
-			n_layers = 1
+			hidden_size = 100
+			n_layers = 2
 			lr = 0.005
 			chunk_len = 100
 
