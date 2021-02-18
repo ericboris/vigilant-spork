@@ -1,0 +1,3 @@
++ run
++ docker run --rm -v /Users/allysonely/Desktop/cse_447/vigilant-spork/cp2/src:/job/src -v /Users/allysonely/Desktop/cse_447/vigilant-spork/cp2/work:/job/work -v :/job/data -v /Users/allysonely/Desktop/cse_447/vigilant-spork/cp2/output:/job/output cse447-proj/demo bash /job/src/predict.sh /job/data/input.txt /job/output/pred.txt
+bash: /job/src/predict.sh: Operation not permitted
