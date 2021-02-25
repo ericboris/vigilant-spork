@@ -15,7 +15,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from tqdm import tqdm
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
@@ -180,6 +180,7 @@ class CharRNN(nn.Module):
 
 
 # Utility to plot learning curve
+"""
 def loss_plot(losses, valid_losses):
 	'''
 	Plot the validation and training loss.
@@ -194,6 +195,7 @@ def loss_plot(losses, valid_losses):
 	assert len(losses) == len(valid_losses)
 	epochs = np.arange(len(losses))
 	plt.plot(epochs, losses, 'r-', valid_losses, 'b-')
+"""
 
 
 # Train the model.
@@ -336,10 +338,9 @@ def train(net, data, epochs=10, batch_size=16, seq_len=50, lr=0.001, clip=5, val
 				'n_layers': n_layers,
 				'state_dict': state_dict,
 				'tokens': tokens}
-
 	
 	# plot loss curve
-	loss_plot([float(l) for l in losses], [float(v) for v in vlosses])
+	# loss_plot([float(l) for l in losses], [float(v) for v in vlosses])
 	
 	return checkpoint
 
@@ -558,10 +559,8 @@ if __name__ == '__main__':
 		else: 
 			if train_on_multi_gpus:
 				print(f"Tranning on {gpus} GPUs!")
-
 			elif train_on_gpu:
 				print('Training on GPU!')
-
 			else: 
 				print('No GPU available, training on CPU; consider making n_epochs very small.')
 
