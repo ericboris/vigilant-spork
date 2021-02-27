@@ -253,7 +253,7 @@ def train(net, data, epochs=10, batch_size=16, seq_len=50, lr=0.001, clip=5, val
 			# if using DataParallel wrapper to use multiple GPUs
 			hidden = net.module.init_hidden(batch_size)
 
-		for x, y in get_batches(data, batch_size, seq_len):
+		for x, y in tqdm(get_batches(data, batch_size, seq_len)):
 
 			counter += 1
 
@@ -302,7 +302,7 @@ def train(net, data, epochs=10, batch_size=16, seq_len=50, lr=0.001, clip=5, val
 					x = one_hot_encode(x, n_chars)
 
 					val_h = tuple([each.data for each in val_h])
-					inputs, targets = torch.from_numpy(x), torch.from_numpy(y)
+
 
 					if train_on_gpu or train_on_multi_gpus:
 						inputs, targets = inputs.cuda(), targets.cuda()
@@ -535,6 +535,7 @@ if __name__ == '__main__':
 	
 	## We'll load text file and convert it into integers for our network to use.
 	# open text file and read data as 'text'
+	print('Loading data')
 	with open('data/cleaned_data/train.txt', 'r') as f:
 		text = f.read()
 
@@ -543,6 +544,7 @@ if __name__ == '__main__':
 	# create two dictionaries:
 	# 1. int2char, maps integers to characters
 	# 2. char2int, maps characters to integers
+	print('Tokenizing')
 	chars = tuple(set(text))
 	int2char = dict(enumerate(chars))
 	char2int = {ch: ii for ii, ch in int2char.items()}
